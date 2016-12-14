@@ -15,7 +15,7 @@ create a welcome screen
 style with css 
 -}
 
-type Msg = Guess Char | SubmitGuess | Restart 
+type Msg = Guess Char | Restart 
 
 type GameState = Playing | Starting | Lost | Won
 
@@ -40,6 +40,7 @@ view model =
         Won -> 
             div []
                 [ h1 [] [text "You've won"]
+                , h2 [] [text <| "The hidden word was: " ++ model.hiddenWord]
                 , button [onClick Restart] [text "Restart"]
                 ]
         Lost -> 
@@ -60,16 +61,22 @@ view model =
                 , h1 [class "app-title"] [text "Hangman"]
                 , h2 [class "guessed-letters"] [text <| showGuessSequence model.guessedSequence model.hiddenWord ]
                 , h2 [] [text <| "Tries remaining: " ++ toString (maxTries - List.length model.failedSequence)]
-                , input [onInput (Guess << stringHead), maxlength 1, defaultValue "" ] [text <| fromChar model.guess]
-                , button [onClick SubmitGuess] [text "Submit"]
+                , buttonArray ["a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z"] model
                 ]
 
+buttonArray : List String -> Model -> Html Msg
+buttonArray l m = 
+    div [class "keyboard"] 
+        (List.map (\x -> 
+            case List.member (stringHead x) (List.append m.failedSequence (List.map second m.guessedSequence))  of
+                True -> button [disabled True][text x]
+                False -> button [onClick (Guess <| stringHead x)][text x]) l)
+            
 
 update : Msg -> Model -> Model 
 update msg model =
   case msg of
-    Guess char -> {model | guess=char}
-    SubmitGuess -> updateGuessedWord model
+    Guess char -> updateGuessedWord {model | guess=char}
     Restart -> {defaultModel | gameState=Playing}
 
 
