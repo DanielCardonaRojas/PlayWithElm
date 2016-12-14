@@ -2,3 +2,18 @@
     letter-spacing: 30px;
     font-size: 5rem;
 }
+
+div.hangman-app {
+    background-color: #60a;
+    text-align:center;
+    color: #fff;
+    padding: 50px;
+}
+
+.keyboard {
+    padding: 10px 0;
+}
+
+button.letter-button {
+    margin: 0 10px;
+}
