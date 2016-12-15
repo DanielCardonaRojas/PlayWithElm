@@ -4,7 +4,7 @@
 }
 
 div.hangman-app {
-    background-color: #60a;
+    background-color: #0aa;
     text-align:center;
     color: #fff;
     padding: 50px;
@@ -14,6 +14,15 @@ div.hangman-app {
     padding: 10px 0;
 }
 
+
 button.letter-button {
     margin: 0 10px;
+    border-radius: 0px;
+    font-size: 20px;
+    width: 45px;
+    height: 45px;
+	border: 2px solid green;
+    border-radius: 5px;
+    color: white;
+    background-color: #58c57e;
 }

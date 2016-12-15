@@ -1,6 +1,7 @@
 import Html exposing (beginnerProgram, program, div, button, text)
 import Html exposing (..)
 import Html.Attributes exposing (..)
+import Html.Attributes exposing (class)
 import Html.Events exposing (onClick, onInput)
 import String exposing (..)
 import List exposing (..)
@@ -8,6 +9,9 @@ import Tuple exposing (..)
 import Maybe exposing (..)
 import Http
 import Json.Decode as Decode
+import Svg exposing (svg, rect, circle, line)
+import Svg.Attributes 
+import Svg.Attributes exposing (viewBox, rx, ry, x, y, x1, x2, y1, y2, cx, cy, r,stroke,strokeWidth, fill)
 
 {-
 todo: 
@@ -19,6 +23,8 @@ style with css
 
 
 type GameState = Playing | Starting | Lost | Won
+
+type Msg = Guess Char | Restart | GetRandomWord | NewWord (Result Http.Error String)
 
 type alias Model = { guess : Char 
                    , hiddenWord : String
@@ -66,14 +72,20 @@ view model =
                 ]
         -- Normal Playing Screen
         Playing ->
-            div [class "hangman-app"]
+            div [ class "hangman-app"]
                 [ stylesheet
                 , h1 [class "app-title"] [text "Hangman"]
-                , h2 [class "guessed-letters"] [text <| showGuessSequence model.guessedSequence model.hiddenWord ]
+                , div [class "hangman-draw"]
+                      [ hangmanSvg (List.length model.failedSequence)
+                      , h2 [class "guessed-letters"] [text <| showGuessSequence model.guessedSequence model.hiddenWord ]
+                      ]
                 , h2 [] [text <| "Tries remaining: " ++ toString (maxTries - List.length model.failedSequence)]
                 , buttonArray ["a","b","c","d","e","f","g","h","i","j","k","l","m"] model
                 , buttonArray ["n","o","p","q","r","s","t","u","v","w","x","y","z"] model
+                     
                 ]
+
+
 
 buttonArray : List String -> Model -> Html Msg
 buttonArray l m = 
@@ -82,10 +94,26 @@ buttonArray l m =
             case List.member (stringHead x) (List.append m.failedSequence (List.map second m.guessedSequence))  of
                 True -> button [class "letter-button", disabled True][text x]
                 False -> button [class "letter-button", onClick (Guess <| stringHead x)][text x]) l)
+
+
+hangmanSvg n = 
+    let 
+        xcenter = "50"
+        head = circle [cx xcenter, cy "30", r "15", fill "#fff"] []
+        body = line [x1 xcenter, y1 "40", x2 xcenter, y2 "100", stroke "#fff", strokeWidth "2"][]
+        rightFoot = line [x1 xcenter, y1 "100", x2 "70", y2 "140", stroke "#fff",strokeWidth "2"][]
+        leftFoot = line [x1 xcenter, y1 "100", x2 "30", y2 "140", stroke "#fff",strokeWidth "2"][]
+        rightHand = line [x1 xcenter, y1 "65", x2 "75", y2 "65", stroke "#fff", strokeWidth "2"][]
+        leftHand = line [x1 xcenter, y1 "65", x2 "25", y2 "65", stroke "#fff", strokeWidth "2"][]
+        poleBottom = line [x1 "0", y1 "160", x2 "60", y2 "160", stroke "#fff", strokeWidth "2"][]
+        poleTop = line [x1 "0", y1 "0", x2 xcenter, y2 "0", stroke "#fff", strokeWidth "2"][]
+        pole = line [x1 "0", y1 "0", x2 "0", y2 "160", stroke "#fff", strokeWidth "2"][]
+        slipKnot = line [x1 xcenter, y1 "0", x2 xcenter, y2 "30", stroke "#fff", strokeWidth "2"][]
+        hangman = [poleBottom, pole, poleTop, slipKnot, head, body, rightFoot, leftFoot, rightHand, leftHand]
+    in svg [ Svg.Attributes.width "120", Svg.Attributes.height "160", viewBox "0 0 120 160" ] (List.take n hangman)
             
 -- UPDATE
 
-type Msg = Guess Char | Restart | GetRandomWord | NewWord (Result Http.Error String)
 
 --update : Msg -> Model -> Model 
 update : Msg -> Model -> (Model, Cmd Msg) 
