@@ -12,6 +12,8 @@ import Json.Decode as Decode
 import Svg exposing (svg, rect, circle, line)
 import Svg.Attributes 
 import Svg.Attributes exposing (viewBox, rx, ry, x, y, x1, x2, y1, y2, cx, cy, r,stroke,strokeWidth, fill)
+import Keyboard exposing(..)
+import Char exposing (toCode, fromCode)
 
 {-
 todo: 
@@ -80,6 +82,7 @@ view model =
                       , h2 [class "guessed-letters"] [text <| showGuessSequence model.guessedSequence model.hiddenWord ]
                       ]
                 , h2 [] [text <| "Tries remaining: " ++ toString (maxTries - List.length model.failedSequence)]
+                , h2 [] [text <| "Last guess: " ++ toString (model.guess)]
                 , buttonArray ["a","b","c","d","e","f","g","h","i","j","k","l","m"] model
                 , buttonArray ["n","o","p","q","r","s","t","u","v","w","x","y","z"] model
                      
@@ -163,8 +166,15 @@ decodeRandomWord =
   Decode.at ["results"] (Decode.index 0 (Decode.at ["name","first"] Decode.string))
 
 -- SUBSCRIPTIONS
+
 subscriptions : Model -> Sub Msg
-subscriptions model = Sub.none
+subscriptions model = 
+    case model.gameState of
+        Playing -> ups  (\x -> Guess <| Char.toLower (fromCode x))
+        Won -> Sub.none
+        Lost -> Sub.none
+        Starting -> Sub.none
+
 
 ---------------------- HELPERS ----------------------
 
@@ -181,7 +191,6 @@ showGuessSequence l w =
         hiddenWordLength = String.length w
     in 
         List.map (\x -> lookup x l |> withDefault '_') (range 0 (hiddenWordLength - 1)) |> String.fromList
-
 
 stringToList : String -> List Char
 stringToList str = []
