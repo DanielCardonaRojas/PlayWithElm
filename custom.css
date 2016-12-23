@@ -12,8 +12,11 @@ div.hangman-app {
 
 .keyboard {
     padding: 10px 0;
-}
+} 
 
+button.letter-button:disabled {
+    background-color: rgba(197, 128, 88, 0.52);
+}
 
 button.letter-button {
     margin: 0 10px;
