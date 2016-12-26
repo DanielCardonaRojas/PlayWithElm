@@ -9,6 +9,7 @@ import Tuple exposing (..)
 import List exposing (..)
 import Svg exposing (svg, rect, circle, line, polyline, g)
 import Svg.Attributes 
+import Svg.Events 
 import Svg.Attributes exposing (viewBox, rx, ry, x, y, x1, x2, y1, y2, cx, cy, r,stroke,strokeWidth, fill,points)
 import Mouse exposing (..)
 
@@ -55,49 +56,53 @@ view model =
                     , button [onClick Restart][text "Restart"]
         
                     ]
+-- | Can render an empty box or a box with a player figure in it
+renderBox : Move -> Maybe Player -> Html Msg
+renderBox position m =  
+    let 
+        widthFactor = 0.87
+        --figureInset = (1 - widthFactor) * 0.5 * columWidth |> toString
+        figureInset = "14"
+        borderInset = "5"
+        playerFigure player = 
+            if player == PlayerO
+            then 
+                circle [columWidth * 0.5 |> toString |> cx, columWidth * 0.5 |> toString |> cy, columWidth * 0.35 |> toString |> r][]
+            else 
+                g [fill "none", stroke "#00f", strokeWidth "5"] 
+                  [ line [x1 figureInset, y1 figureInset,  x2 <| toString (columWidth * widthFactor), y2 <| toString (columWidth * widthFactor)][]
+                  , line [x1 <| toString (columWidth * widthFactor), y1 figureInset,  x2 figureInset, y2 <| toString (columWidth * widthFactor)][]
+                  ]
+
+        pixelsForColumn = toString (floor columWidth * position.column)
+        pixelsForRow = toString (floor columWidth * position.row)
+
+        boxWith html = 
+            g [ "transform: translate(" ++ pixelsForColumn ++ "px, " ++ pixelsForRow ++ "px);" |> Svg.Attributes.style 
+              , Svg.Events.onClick (Play position)
+              , Svg.Attributes.class "move-box"
+              ] 
+              [ line [stroke "#000", strokeWidth "5", toString 0 |> x1, toString 0 |> y1, toString 0 |> x2, toString columWidth |> y2][]
+              , line [stroke "#000", strokeWidth "5", toString 0 |> x1, toString 0 |> y1, toString columWidth |> x2, toString 0 |> y2][]
+              , line [stroke "#000", strokeWidth "5", toString columWidth |> x1, toString 0 |> y1, toString columWidth |> x2, toString columWidth |> y2][]
+              , line [stroke "#000", strokeWidth "5", toString 0 |> x1, toString columWidth |> y1, toString columWidth |> x2, toString columWidth |> y2][]
+              , html
+              ]
+    in
+        case m of
+            Just player -> boxWith <| playerFigure player
+            Nothing -> boxWith <| rect [x borderInset, y borderInset, Svg.Attributes.width (toString <| columWidth * 0.9)
+                                       , Svg.Attributes.height (toString <| columWidth * 0.9), fill "#eee"] []
 
 
 
 renderBoard : Model -> Html Msg
 renderBoard model = 
     let 
-        pieceTop r = (columWidth * r + inset)
-        pieceLeft c = (columWidth * c + inset)
-        pieceRight c = (columWidth * c + inset) + pieceSize
-        pieceBottom r = (columWidth * r + inset) + pieceSize
-
-        pieceTopLeft c r = (pieceLeft c, pieceTop r)
-        pieceTopRight c r = (pieceRight c,pieceTop r)
-        pieceBottomRight c r = (pieceRight c, pieceBottom r)
-        pieceBottomLeft c r = (pieceLeft c, pieceBottom r)
-
-        pointss l = points <| String.concat (List.map (\(x,y) -> toString x ++ "," ++ toString y ++ " ") l)
-        pieceCenter c r = (columWidth * c + (columWidth / 2), columWidth * r + (columWidth/2))
-        pieceCenterX c r = pieceCenter c r |> first
-        pieceCenterY c r = pieceCenter c r |> second
-        board  = 
-            g [fill "none", stroke "black"]
-              [
-                line [x1 <| toString 0, y1 <| toString columWidth,  x2 <| toString boardSize, y2 <| toString columWidth][]
-              , line [x1 <| toString 0, y1 <| toString (columWidth * 2),  x2 <| toString boardSize, y2 <| toString (columWidth * 2)][]
-              , line [y1 <| toString 0, x1 <| toString columWidth,  y2 <| toString boardSize, x2 <| toString columWidth][]
-              , line [y1 <| toString 0, x1 <| toString (columWidth * 2),  y2 <| toString boardSize, x2 <| toString (columWidth * 2)][]
-              ]
-        
-        cross c r = g [fill "none", stroke "#00f"] 
-                      [ line [x1 <| toString (pieceLeft c), y1 <| toString (pieceTop r),  x2 <| toString (pieceRight c), y2 <| toString (pieceBottom r)][]
-                      , line [x1 <| toString (pieceLeft c), y1 <| toString (pieceBottom r),  x2 <| toString (pieceRight c), y2 <| toString (pieceTop r)][]
-                      ]
-
-        circ c row = circle [cx ( pieceCenterX c row |> toString), cy (pieceCenterY c row |> toString), r (toString <| pieceSize * 0.5), fill "#f00", stroke "2"] []
-
-        drawPieces l =
-            List.map (\(position, p)  -> if p == PlayerX then cross (Basics.toFloat position.column) (Basics.toFloat position.row)
-                                         else circ (Basics.toFloat position.column)  (Basics.toFloat position.row)) l
-                                        
-            
+        renderGame = List.map (uncurry renderBox) (boardMoves model.playerMoves)
     in
-        svg [ Svg.Attributes.width (toString boardSize), Svg.Attributes.height (toString boardSize)] (board :: (drawPieces model.playerMoves))
+        svg [ Svg.Attributes.width (toString boardSize), Svg.Attributes.height (toString boardSize)] (renderGame)
+
 
 -- UPDATE
 update : Msg -> Model -> (Model, Cmd Msg)
@@ -123,7 +128,9 @@ subscriptions m =
             in 
                 if not hasBeenPlayed then Play pos else Player m.playerTurn
 
-    in ups handler
+    in 
+        --ups handler
+        Sub.none
 
 
 --HELPERS
@@ -152,6 +159,14 @@ hasWon moveList =
 
 
 
+boardMoves : List (Move,Player) -> List (Move, Maybe Player)
+boardMoves playedMoves = 
+    let
+        lookup e l = List.filter (\x -> e == first x) l |> List.head |> Maybe.map second
+        allPositions = [lowerRight,lowerLeft, lowerMiddle, upperRight, upperLeft, upperMiddle, centerLeft, centerRight, centerMiddle]
+    in
+        List.map (\p -> flip lookup playedMoves p |> (\x -> (p,x))) allPositions
+
 -- CONSTANTS
 pieceWidth = 25
 pieceHeight = 25
@@ -165,8 +180,13 @@ boardLength = 3
 
 
 boardCenter = {row = 1, column = 1}
+
 lowerRight = {row = 2, column = 2}
 lowerMiddle = {row = 2, column = 1}
+lowerLeft = {row = 2, column = 0}
 upperRight = {row = 0, column = 2}
 upperLeft = {row = 0, column = 0}
-lowerLeft = {row = 2, column = 0}
+upperMiddle = {row = 0, column = 1}
+centerLeft = {row = 1, column = 0}
+centerRight = {row = 1, column = 2}
+centerMiddle = {row = 1, column = 1}
