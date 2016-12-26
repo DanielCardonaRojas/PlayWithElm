@@ -42,17 +42,23 @@ view : Model -> Html Msg
 view model = 
     case model.didWin of
         Just p ->  div [class "tictactoe"][
-                         h2 [] [text <| (toString p) ++ " wins"]
+                         stylesheet "custom.css"
+                       , h2 [] [text <| (toString p) ++ " wins"]
                        , button [onClick Restart][text "Restart"]
             
                        ]
         Nothing -> 
             if List.length model.playerMoves /= (boardLength ^ 2) then 
-                div [class "tictactoe"] [renderBoard model]
+                div [class "tictactoe"] [
+                      stylesheet "custom.css"
+                    , h1 [] [text "Tictactoe"]
+                    , renderBoard model
+                    ]
             else 
 
                 div [class "tictactoe"][
-                      h2 [] [text "Tie"]
+                     stylesheet "custom.css"
+                    , h2 [] [text "Tie"]
                     , button [onClick Restart][text "Restart"]
         
                     ]
@@ -166,6 +172,22 @@ boardMoves playedMoves =
         allPositions = [lowerRight,lowerLeft, lowerMiddle, upperRight, upperLeft, upperMiddle, centerLeft, centerRight, centerMiddle]
     in
         List.map (\p -> flip lookup playedMoves p |> (\x -> (p,x))) allPositions
+
+
+
+
+
+stylesheet name =
+    let
+        tag = "link"
+        attrs =
+            [ attribute "rel"       "stylesheet"
+            , attribute "property"  "stylesheet"
+            , attribute "href"      name
+            ]
+        children = []
+    in 
+        node tag attrs children
 
 -- CONSTANTS
 pieceWidth = 25

@@ -1,3 +1,4 @@
+/*---------------------- HANGMAN -------------------*/
 .guessed-letters {
     letter-spacing: 30px;
     font-size: 5rem;
@@ -28,4 +29,18 @@ button.letter-button {
     border-radius: 5px;
     color: white;
     background-color: #58c57e;
+}
+
+
+/*-------------- Tic tac toe ----------------------*/
+.tictactoe {
+    text-align: center;
+    padding-top: 10rem;
+    background-color: #913D88;
+    padding-bottom: 3rem;
+    color:white;
+}
+
+.tictactoe svg {
+    background-color: #fff;
 }
