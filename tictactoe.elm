@@ -1,4 +1,4 @@
-
+module Tictactoe exposing (Model, Move, Msg(..), Player(..) , view, update, defaultModel, renderBoard, renderBox)
 import Html exposing (beginnerProgram, program, div, button, text)
 import Html exposing (..)
 import Html.Attributes exposing (..)
@@ -7,12 +7,15 @@ import Html.Events exposing (onClick, onInput)
 import String exposing (..)
 import Tuple exposing (..)
 import List exposing (..)
-import Svg exposing (svg, rect, circle, line, polyline, g)
+import Svg exposing (svg, rect, circle, line, polyline, g, Svg)
 import Svg.Attributes 
 import Svg.Events 
 import Svg.Attributes exposing (viewBox, rx, ry, x, y, x1, x2, y1, y2, cx, cy, r,stroke,strokeWidth, fill,points)
-import Mouse exposing (..)
+--import Mouse exposing (..)
 
+type alias Positioned a =
+      { a | column : Int, row : Int }
+      
 type alias Move = { column : Int, row : Int}
 
 type alias Model = { playerTurn:Player
@@ -52,7 +55,7 @@ view model =
                 div [class "tictactoe"] [
                       stylesheet "custom.css"
                     , h1 [] [text "Tictactoe"]
-                    , renderBoard model
+                    , renderGame model
                     ]
             else 
 
@@ -63,8 +66,9 @@ view model =
         
                     ]
 -- | Can render an empty box or a box with a player figure in it
-renderBox : Move -> Maybe Player -> Html Msg
-renderBox position m =  
+--renderBox : Move -> Maybe Player -> Svg Msg
+renderBox : (Positioned a -> msg) -> Positioned a -> Maybe Player ->  Svg msg
+renderBox tag position m =  
     let 
         widthFactor = 0.87
         --figureInset = (1 - widthFactor) * 0.5 * columWidth |> toString
@@ -80,12 +84,13 @@ renderBox position m =
                   , line [x1 <| toString (columWidth * widthFactor), y1 figureInset,  x2 figureInset, y2 <| toString (columWidth * widthFactor)][]
                   ]
 
-        pixelsForColumn = toString (floor columWidth * position.column)
-        pixelsForRow = toString (floor columWidth * position.row)
+        pixelsForColumn = toString (floor columWidth * .column position)
+        pixelsForRow = toString (floor columWidth * .row position)
 
         boxWith html = 
             g [ "transform: translate(" ++ pixelsForColumn ++ "px, " ++ pixelsForRow ++ "px);" |> Svg.Attributes.style 
-              , Svg.Events.onClick (Play position)
+              --, Svg.Events.onClick (Play position)
+              , Svg.Events.onClick (tag position)
               , Svg.Attributes.class "move-box"
               ] 
               [ line [stroke "#000", strokeWidth "5", toString 0 |> x1, toString 0 |> y1, toString 0 |> x2, toString columWidth |> y2][]
@@ -101,13 +106,12 @@ renderBox position m =
                                        , Svg.Attributes.height (toString <| columWidth * 0.9), fill "#eee"] []
 
 
+renderBoard : List (Positioned a, Player) -> (Positioned a -> msg) -> List (Svg msg)
+renderBoard playerMoves clicktag = List.map (uncurry <| renderBox clicktag) (boardMoves playerMoves)
 
-renderBoard : Model -> Html Msg
-renderBoard model = 
-    let 
-        renderGame = List.map (uncurry renderBox) (boardMoves model.playerMoves)
-    in
-        svg [ Svg.Attributes.width (toString boardSize), Svg.Attributes.height (toString boardSize)] (renderGame)
+renderGame : Model -> Html Msg
+renderGame model = 
+        svg [ Svg.Attributes.width (toString boardSize), Svg.Attributes.height (toString boardSize)] (renderBoard  model.playerMoves Play)
 
 
 -- UPDATE
@@ -165,11 +169,12 @@ hasWon moveList =
 
 
 
-boardMoves : List (Move,Player) -> List (Move, Maybe Player)
+boardMoves : List (Positioned a,Player) -> List (Positioned a, Maybe Player)
 boardMoves playedMoves = 
     let
         lookup e l = List.filter (\x -> e == first x) l |> List.head |> Maybe.map second
         allPositions = [lowerRight,lowerLeft, lowerMiddle, upperRight, upperLeft, upperMiddle, centerLeft, centerRight, centerMiddle]
+        --allPositions = [lowerRight]
     in
         List.map (\p -> flip lookup playedMoves p |> (\x -> (p,x))) allPositions
 
@@ -203,6 +208,7 @@ boardLength = 3
 
 boardCenter = {row = 1, column = 1}
 
+--lowerRight a = {a | row = 2, column = 2}
 lowerRight = {row = 2, column = 2}
 lowerMiddle = {row = 2, column = 1}
 lowerLeft = {row = 2, column = 0}
