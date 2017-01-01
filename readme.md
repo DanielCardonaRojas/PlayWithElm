@@ -8,8 +8,5 @@ Just cd into the folder and run `elm-reactor`
 
 # TODO:
 
-Make 1D tictactoe register click positions relative to boardposition.
+3DTictactoe - (detect cube inner diagonals) do 4x4.
 
-Implement these games
-
-Tic tac toe 3x3 and 4x4.

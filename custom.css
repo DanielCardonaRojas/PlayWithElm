@@ -35,7 +35,7 @@ button.letter-button {
 /*-------------- Tic tac toe ----------------------*/
 .tictactoe {
     text-align: center;
-    padding-top: 10rem;
+    padding-top: 2rem;
     background-color: #913D88;
     padding-bottom: 3rem;
     color:white;
@@ -43,4 +43,16 @@ button.letter-button {
 
 .tictactoe svg {
     background-color: #fff;
+}
+
+.tictactoe h1 {
+    margin-bottom:5rem;
+}
+
+
+.tictactoe.cubic svg {
+    display: block;
+    margin: -60px auto;
+    transform: skewX(-45deg)scale(1,0.55)rotate(-70deg);
+    background-color: rgba(255, 255, 255, 0.28);
 }

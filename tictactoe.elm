@@ -1,4 +1,4 @@
-module Tictactoe exposing (Model, Move, Msg(..), Player(..) , view, update, defaultModel, renderBoard, renderBox)
+module Tictactoe exposing (Model, Positioned, Move, Msg(..), Player(..) , view, update, defaultModel, renderBoard, renderBox, hasWon)
 import Html exposing (beginnerProgram, program, div, button, text)
 import Html exposing (..)
 import Html.Attributes exposing (..)
@@ -67,7 +67,7 @@ view model =
                     ]
 -- | Can render an empty box or a box with a player figure in it
 --renderBox : Move -> Maybe Player -> Svg Msg
-renderBox : (Positioned a -> msg) -> Positioned a -> Maybe Player ->  Svg msg
+renderBox : (Move -> msg) -> Move -> Maybe Player ->  Svg msg
 renderBox tag position m =  
     let 
         widthFactor = 0.87
@@ -106,12 +106,13 @@ renderBox tag position m =
                                        , Svg.Attributes.height (toString <| columWidth * 0.9), fill "#eee"] []
 
 
-renderBoard : List (Positioned a, Player) -> (Positioned a -> msg) -> List (Svg msg)
-renderBoard playerMoves clicktag = List.map (uncurry <| renderBox clicktag) (boardMoves playerMoves)
+--renderBoard : List (Positioned a) -> List (Positioned a, Player) -> (Move -> msg) -> List (Svg msg)
+renderBoard : List (Move) -> List (Move, Player) -> (Move -> msg) -> List (Svg msg)
+renderBoard allPossibleMoves playerMoves clicktag = List.map (uncurry <| renderBox clicktag) (boardMoves allPossibleMoves playerMoves)
 
 renderGame : Model -> Html Msg
 renderGame model = 
-        svg [ Svg.Attributes.width (toString boardSize), Svg.Attributes.height (toString boardSize)] (renderBoard  model.playerMoves Play)
+        svg [ Svg.Attributes.width (toString boardSize), Svg.Attributes.height (toString boardSize)] (renderBoard  allPositions model.playerMoves Play)
 
 
 -- UPDATE
@@ -167,16 +168,26 @@ hasWon moveList =
         
 
 
+lookupBy : (a -> b) -> (c -> b) -> c -> List a -> Maybe a
+lookupBy s1 s2 e l = List.filter (\x -> s1 x == s2 e) l |> List.head 
+
+lookup c l = lookupBy first id c l |> Maybe.map second
 
 
-boardMoves : List (Positioned a,Player) -> List (Positioned a, Maybe Player)
-boardMoves playedMoves = 
+boardMoves : List (Positioned a) -> List (Positioned a,Player) -> List (Positioned a, Maybe Player)
+boardMoves allPossibleMoves playedMoves = 
     let
-        lookup e l = List.filter (\x -> e == first x) l |> List.head |> Maybe.map second
-        allPositions = [lowerRight,lowerLeft, lowerMiddle, upperRight, upperLeft, upperMiddle, centerLeft, centerRight, centerMiddle]
-        --allPositions = [lowerRight]
+        lookupByColumnRow : Positioned a -> List (Positioned a, Player) -> Maybe Player
+        lookupByColumnRow p l = 
+                lookupBy (\x -> {row = .row (first x), column = .column (first x)}) (\x -> {row = .row x, column = .column x}) p l 
+                |> Maybe.map second
+
+
+        convertPositioned : Positioned a -> (Positioned a, Maybe Player)
+        convertPositioned p = lookupByColumnRow p playedMoves |> (\x -> (p, x))
     in
-        List.map (\p -> flip lookup playedMoves p |> (\x -> (p,x))) allPositions
+        --List.map (\p -> flip lookup playedMoves p |> (\x -> (p,x))) allPositions
+        List.map (\p -> lookupByColumnRow p playedMoves |> (\x -> (p, x))) allPossibleMoves
 
 
 
@@ -205,6 +216,7 @@ pieceSize = columWidth * 0.7
 boardSize = 300
 boardLength = 3
 
+allPositions = [lowerRight,lowerLeft, lowerMiddle, upperRight, upperLeft, upperMiddle, centerLeft, centerRight, centerMiddle]
 
 boardCenter = {row = 1, column = 1}
 
